@@ -5,7 +5,8 @@ import {
   type ApiStats, type ApiCampaign, type ApiTask, type ApiOnboardingItem, type ApiReports, type ApiAudit,
 } from './api'
 
-type Screen = 'hero' | 'chat' | 'services' | 'signup' | 'dashboard' | 'audit'
+type Screen = 'hero' | 'chat' | 'services' | 'pricing' | 'signup' | 'dashboard' | 'audit'
+type BillingCycle = 'monthly' | 'annual'
 type DashboardTab = 'overview' | 'content' | 'clients' | 'orders' | 'activity' | 'marketing' | 'tasks' | 'reports'
 
 interface ChatData {
@@ -19,6 +20,7 @@ interface Phase {
   num: number
   name: string
   monthly: string
+  monthlyNum: number
   daily: string
   description: string
   features: string[]
@@ -47,6 +49,7 @@ const PHASES: Phase[] = [
     num: 1,
     name: 'Presence',
     monthly: '£297/mo',
+    monthlyNum: 297,
     daily: '£9.90/day',
     description: 'Get online with a professional website and essential digital foundations.',
     features: ['Custom website build', 'Google Business Profile', 'Basic SEO setup', 'Monthly performance report'],
@@ -55,6 +58,7 @@ const PHASES: Phase[] = [
     num: 2,
     name: 'Visibility',
     monthly: '£597/mo',
+    monthlyNum: 597,
     daily: '£19.90/day',
     description: 'Drive traffic with SEO, content marketing, and social media presence.',
     features: ['Advanced SEO strategy', 'Blog content creation', 'Social media management', 'Email marketing setup'],
@@ -63,6 +67,7 @@ const PHASES: Phase[] = [
     num: 3,
     name: 'Growth',
     monthly: '£1,197/mo',
+    monthlyNum: 1197,
     daily: '£39.90/day',
     description: 'Scale leads and sales with paid ads, funnels, and conversion optimisation.',
     features: ['Google & Meta ads', 'Landing page funnels', 'Lead nurturing sequences', 'Conversion tracking'],
@@ -71,6 +76,7 @@ const PHASES: Phase[] = [
     num: 4,
     name: 'Automation',
     monthly: '£2,197/mo',
+    monthlyNum: 2197,
     daily: '£73/day',
     description: 'Automate operations with AI chatbots, CRM workflows, and smart integrations.',
     features: ['AI chatbot deployment', 'CRM automation', 'Review management', 'Advanced analytics dashboard'],
@@ -79,6 +85,7 @@ const PHASES: Phase[] = [
     num: 5,
     name: 'Domination',
     monthly: '£3,997/mo',
+    monthlyNum: 3997,
     daily: '£133/day',
     description: 'Dominate your market with full-stack marketing, PR, and competitive intelligence.',
     features: ['Competitor analysis', 'PR & media outreach', 'Multi-channel campaigns', 'Dedicated account team'],
@@ -337,7 +344,9 @@ function Logo({ size = 28 }: { size?: number }) {
   )
 }
 
-function HeroScreen({ onBegin, onAudit }: { onBegin: () => void; onAudit: () => void }) {
+function HeroScreen({ onBegin, onAudit, onServices, onPricing }: {
+  onBegin: () => void; onAudit: () => void; onServices: () => void; onPricing: () => void
+}) {
   const mobile = useIsMobile()
   const stats = [
     { num: '333M', label: 'Small businesses worldwide' },
@@ -368,8 +377,14 @@ function HeroScreen({ onBegin, onAudit }: { onBegin: () => void; onAudit: () => 
         <Logo />
         <div style={{ display: 'flex', gap: mobile ? 12 : 32, alignItems: 'center' }}>
           <div className="hero-nav-links" style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
-            {['Home', 'Services', 'Pricing', 'About', 'Contact'].map((l) => (
-              <span key={l} className="nav-link">{l}</span>
+            {[
+              { label: 'Home', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+              { label: 'Services', action: onServices },
+              { label: 'Pricing', action: onPricing },
+              { label: 'About', action: onBegin },
+              { label: 'Contact', action: onBegin },
+            ].map((l) => (
+              <span key={l.label} className="nav-link" onClick={l.action}>{l.label}</span>
             ))}
             <span className="nav-link" onClick={onAudit}>Free Audit</span>
           </div>
@@ -609,7 +624,116 @@ function ServicesScreen({ selectedPhase, onSelectPhase, onStartTrial }: { select
   )
 }
 
-function SignupScreen({ phase, chatData, onComplete }: { phase: number; chatData: ChatData; onComplete: (email: string, userId: number) => void }) {
+function PricingScreen({
+  selectedPhase, billingCycle, onSelectPhase, onSetBilling, onContinue, onBack,
+}: {
+  selectedPhase: number
+  billingCycle: BillingCycle
+  onSelectPhase: (n: number) => void
+  onSetBilling: (c: BillingCycle) => void
+  onContinue: () => void
+  onBack: () => void
+}) {
+  const phase = PHASES.find((p) => p.num === selectedPhase)!
+  const annualMonthly = Math.round(phase.monthlyNum * 0.8)
+  const annualTotal = annualMonthly * 12
+  const savings = phase.monthlyNum * 12 - annualTotal
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'hsl(201,100%,10%)', padding: '48px 24px 80px' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        <button onClick={onBack} className="nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 32, background: 'none', border: 'none' }}>
+          <i className="ti ti-arrow-left" /> Back to phases
+        </button>
+
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 999, background: 'rgba(15,110,86,0.15)', color: '#0F6E56', fontSize: 13, marginBottom: 16 }}>Simple pricing</div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, marginBottom: 12 }}>Choose how you pay</h2>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>Save 20% with annual billing — same features, better value</p>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.05)', borderRadius: 999, padding: 4, border: '0.5px solid rgba(255,255,255,0.1)' }}>
+            {(['monthly', 'annual'] as BillingCycle[]).map((cycle) => (
+              <button key={cycle} onClick={() => onSetBilling(cycle)} style={{
+                padding: '10px 28px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 14,
+                background: billingCycle === cycle ? '#0F6E56' : 'transparent',
+                color: billingCycle === cycle ? '#fff' : 'rgba(255,255,255,0.5)',
+                fontFamily: 'var(--font-body)', transition: 'all 0.2s',
+              }}>
+                {cycle === 'monthly' ? 'Monthly' : 'Annual — save 20%'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 32 }}>
+          {PHASES.map((p) => {
+            const price = billingCycle === 'monthly' ? p.monthlyNum : Math.round(p.monthlyNum * 0.8)
+            const selected = p.num === selectedPhase
+            return (
+              <div key={p.num} className="phase-card" onClick={() => onSelectPhase(p.num)} style={{
+                padding: 16, borderRadius: 14, cursor: 'pointer',
+                background: selected ? 'rgba(15,110,86,0.12)' : 'rgba(255,255,255,0.03)',
+                border: selected ? '1.5px solid #0F6E56' : '0.5px solid rgba(255,255,255,0.1)',
+              }}>
+                <div style={{ fontSize: 11, color: '#0F6E56', marginBottom: 4 }}>Phase {p.num}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, marginBottom: 8 }}>{p.name}</div>
+                <div style={{ fontSize: 20, fontWeight: 500, color: '#0F6E56' }}>£{price.toLocaleString()}<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>/mo</span></div>
+                {billingCycle === 'annual' && (
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
+                    £{(price * 12).toLocaleString()}/yr
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="scale-in animate-glow" style={{
+          background: 'rgba(255,255,255,0.03)', borderRadius: 20, padding: 32,
+          border: '1px solid rgba(15,110,86,0.3)', textAlign: 'center', marginBottom: 32,
+        }}>
+          <div style={{ fontSize: 13, color: '#0F6E56', marginBottom: 8 }}>Phase {phase.num} — {phase.name}</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 56, marginBottom: 4 }}>
+            £{billingCycle === 'monthly' ? phase.monthlyNum.toLocaleString() : annualMonthly.toLocaleString()}
+            <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)' }}>/mo</span>
+          </div>
+          {billingCycle === 'annual' ? (
+            <>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 8 }}>
+                Billed annually at £{annualTotal.toLocaleString()}/year
+              </p>
+              <div style={{ display: 'inline-block', padding: '6px 14px', borderRadius: 999, background: 'rgba(15,110,86,0.2)', color: '#0F6E56', fontSize: 13 }}>
+                You save £{savings.toLocaleString()} per year
+              </div>
+            </>
+          ) : (
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Switch to annual and save 20%</p>
+          )}
+          <ul style={{ listStyle: 'none', marginTop: 24, textAlign: 'left', maxWidth: 360, margin: '24px auto 0' }}>
+            {phase.features.map((f) => (
+              <li key={f} style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', padding: '6px 0', display: 'flex', gap: 8 }}>
+                <i className="ti ti-check" style={{ color: '#0F6E56' }} />{f}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>14-day free trial · No card needed</div>
+          <button className="btn-teal" onClick={onContinue} style={{ borderRadius: 12, padding: '16px 48px', fontSize: 16 }}>
+            Start free trial — {billingCycle === 'annual' ? 'Annual' : 'Monthly'} →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SignupScreen({ phase, billingCycle, chatData, onComplete }: {
+  phase: number; billingCycle: BillingCycle; chatData: ChatData; onComplete: (email: string, userId: number) => void
+}) {
   const [signupStep, setSignupStep] = useState(1)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -685,7 +809,7 @@ function SignupScreen({ phase, chatData, onComplete }: { phase: number; chatData
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, marginBottom: 8 }}>Create your account</h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 28 }}>
-              Starting with Phase {phase} — {phaseData.name} at {phaseData.daily}
+              Phase {phase} — {phaseData.name} · {billingCycle === 'annual' ? 'Annual (20% off)' : 'Monthly'} at {phaseData.daily}
             </p>
             {error && (
               <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', borderRadius: 10, padding: '12px 16px', fontSize: 14, color: '#EF4444', marginBottom: 16 }}>
@@ -1069,6 +1193,8 @@ function DashboardScreen({ chatData, userEmail, userId }: { chatData: ChatData; 
   const [selectedClient, setSelectedClient] = useState<number | null>(null)
   const [modalClient, setModalClient] = useState<number | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(true)
+  const [showAddClient, setShowAddClient] = useState(false)
+  const [newClient, setNewClient] = useState({ name: '', industry: '', email: '' })
 
   const loadData = useCallback(async () => {
     try {
@@ -1113,6 +1239,14 @@ function DashboardScreen({ chatData, userEmail, userId }: { chatData: ChatData; 
     setOnboarding(ob.items)
   }
 
+  const handleAddClient = async () => {
+    if (!newClient.name.trim()) return
+    await api.addClient({ name: newClient.name, industry: newClient.industry, email: newClient.email })
+    setShowAddClient(false)
+    setNewClient({ name: '', industry: '', email: '' })
+    loadData()
+  }
+
   const navItems: { id: DashboardTab; label: string; icon: string; badge?: number }[] = [
     { id: 'overview', label: 'Overview', icon: 'ti-layout-dashboard' },
     { id: 'content', label: 'Content Studio', icon: 'ti-cards', badge: content.length },
@@ -1139,6 +1273,22 @@ function DashboardScreen({ chatData, userEmail, userId }: { chatData: ChatData; 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'hsl(201,100%,13%)' }}>
       {modalClient && <ClientModal clientId={modalClient} onClose={() => setModalClient(null)} />}
+      {showAddClient && (
+        <div className="modal-overlay" onClick={() => setShowAddClient(false)}>
+          <div className="scale-in" onClick={(e) => e.stopPropagation()} style={{
+            width: 400, background: 'hsl(201,100%,10%)', borderRadius: 16, padding: 28,
+            border: '0.5px solid rgba(255,255,255,0.12)',
+          }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 20 }}>Add client</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+              <input className="input-field" placeholder="Business name" value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} />
+              <input className="input-field" placeholder="Industry" value={newClient.industry} onChange={(e) => setNewClient({ ...newClient, industry: e.target.value })} />
+              <input className="input-field" placeholder="Email" value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} />
+            </div>
+            <button className="btn-teal" onClick={handleAddClient} style={{ width: '100%', borderRadius: 10, padding: 12 }}>Add client</button>
+          </div>
+        </div>
+      )}
       <aside className="desktop-sidebar" style={{ width: 220, flexShrink: 0, borderRight: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', padding: '24px 16px' }}>
         <div style={{ marginBottom: 32, paddingLeft: 8 }}><Logo size={22} /></div>
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -1241,7 +1391,7 @@ function DashboardScreen({ chatData, userEmail, userId }: { chatData: ChatData; 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <h1 style={{ fontSize: 24, fontWeight: 500 }}>Clients & Orders</h1>
-              <button className="btn-teal" style={{ borderRadius: 10, padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button className="btn-teal" onClick={() => setShowAddClient(true)} style={{ borderRadius: 10, padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <i className="ti ti-plus" style={{ fontSize: 16 }} /> Add client
               </button>
             </div>
@@ -1571,6 +1721,7 @@ function AuditScreen({ onBegin, onBack }: { onBegin: () => void; onBack: () => v
 export default function App() {
   const [screen, setScreen] = useState<Screen>('hero')
   const [selectedPhase, setSelectedPhase] = useState(1)
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')
   const [chatData, setChatData] = useState<ChatData>({ name: '', business: '', problem: '', budget: '' })
   const [userEmail, setUserEmail] = useState('')
   const [userId, setUserId] = useState<number | undefined>()
@@ -1585,7 +1736,14 @@ export default function App() {
   return (
     <>
       <style>{GLOBAL_CSS}</style>
-      {screen === 'hero' && <HeroScreen onBegin={() => setScreen('chat')} onAudit={() => setScreen('audit')} />}
+      {screen === 'hero' && (
+        <HeroScreen
+          onBegin={() => setScreen('chat')}
+          onAudit={() => setScreen('audit')}
+          onServices={() => setScreen('services')}
+          onPricing={() => { setScreen('pricing'); setSelectedPhase(1) }}
+        />
+      )}
       {screen === 'audit' && <AuditScreen onBegin={() => setScreen('chat')} onBack={() => setScreen('hero')} />}
       {screen === 'chat' && (
         <ChatScreen
@@ -1597,12 +1755,23 @@ export default function App() {
         <ServicesScreen
           selectedPhase={selectedPhase}
           onSelectPhase={setSelectedPhase}
-          onStartTrial={() => setScreen('signup')}
+          onStartTrial={() => setScreen('pricing')}
+        />
+      )}
+      {screen === 'pricing' && (
+        <PricingScreen
+          selectedPhase={selectedPhase}
+          billingCycle={billingCycle}
+          onSelectPhase={setSelectedPhase}
+          onSetBilling={setBillingCycle}
+          onContinue={() => setScreen('signup')}
+          onBack={() => setScreen('services')}
         />
       )}
       {screen === 'signup' && (
         <SignupScreen
           phase={selectedPhase}
+          billingCycle={billingCycle}
           chatData={chatData}
           onComplete={(e, id) => { setUserEmail(e); setUserId(id); setScreen('dashboard') }}
         />

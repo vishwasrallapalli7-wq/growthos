@@ -379,8 +379,19 @@ app.post('/api/chat/:clientId', (req, res) => {
   res.json({ id: result.lastInsertRowid })
 })
 
+const isProd = process.env.NODE_ENV === 'production'
+if (isProd) {
+  const distPath = path.join(__dirname, '..', 'dist')
+  app.use(express.static(distPath))
+  app.get('/{*splat}', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(distPath, 'index.html'))
+    }
+  })
+}
+
 app.listen(PORT, () => {
-  console.log(`\n🚀 GrowthOS API running at http://localhost:${PORT}`)
+  console.log(`\n🚀 GrowthOS ${isProd ? 'Production' : 'API'} running at http://localhost:${PORT}`)
   console.log(`   Database: SQLite (data/growthos.db)`)
   console.log(`   Email: ${process.env.RESEND_API_KEY ? 'Resend' : process.env.SMTP_HOST ? 'SMTP' : 'Console (dev)'}`)
   console.log(`   Instagram: ${process.env.INSTAGRAM_ACCESS_TOKEN ? 'Connected' : 'Mock mode'}`)
